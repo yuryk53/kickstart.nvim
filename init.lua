@@ -488,6 +488,7 @@ require('lazy').setup({
 
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
+      'williamboman/mason-lspconfig.nvim',
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -621,41 +622,57 @@ require('lazy').setup({
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-      for name, server in pairs(servers) do
-        server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-        vim.lsp.config(name, server)
-        vim.lsp.enable(name)
-      end
-
-      -- Special Lua Config, as recommended by neovim help docs
-      vim.lsp.config('lua_ls', {
-        on_init = function(client)
-          if client.workspace_folders then
-            local path = client.workspace_folders[1].name
-            if path ~= vim.fn.stdpath 'config' and (vim.uv.fs_stat(path .. '/.luarc.json') or vim.uv.fs_stat(path .. '/.luarc.jsonc')) then return end
-          end
-
-          client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
-            runtime = {
-              version = 'LuaJIT',
-              path = { 'lua/?.lua', 'lua/?/init.lua' },
-            },
-            workspace = {
-              checkThirdParty = false,
-              -- NOTE: this is a lot slower and will cause issues when working on your own configuration.
-              --  See https://github.com/neovim/nvim-lspconfig/issues/3189
-              library = vim.api.nvim_get_runtime_file('', true),
-            },
-          })
-        end,
-        settings = {
-          Lua = {},
+      require('mason-lspconfig').setup {
+        ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
+        automatic_installation = false,
+        handlers = {
+          function(server_name)
+            local server = servers[server_name] or {}
+            -- This handles overriding only values explicitly passed
+            -- by the server configuration above. Useful when disabling
+            -- certain features of an LSP (for example, turning off formatting for ts_ls)
+            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+            require('lspconfig')[server_name].setup(server)
+          end,
         },
-      })
-      vim.lsp.enable 'lua_ls'
+      }
+
+      -- PowerShell LSP (PowerShellEditorServices installed via Mason)
+      local data = vim.fn.stdpath 'data'
+      local cache = vim.fn.stdpath 'cache'
+
+      local mason_path = data .. '\\mason\\packages\\powershell-editor-services'
+      local start_script = mason_path .. '\\PowerShellEditorServices\\Start-EditorServices.ps1'
+      local session_path = cache .. '\\powershell_es.session.json'
+
+      vim.lsp.config.powershell_es = {
+        capabilities = require('blink.cmp').get_lsp_capabilities(), -- you already use this pattern
+        -- IMPORTANT: match your actual buffer filetypes on Windows
+        filetypes = { 'ps1', 'psm1', 'psd1', 'powershell' },
+        root_markers = { '.git' },
+
+        -- IMPORTANT: use -File + -Stdio (much more reliable on Windows than -Command strings)
+        cmd = {
+          'pwsh',
+          '-NoLogo',
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          start_script,
+          '-Stdio',
+          '-BundledModulesPath',
+          mason_path,
+          '-SessionDetailsPath',
+          session_path,
+          '-LogLevel',
+          'Normal',
+        },
+      }
+
+      vim.lsp.enable 'powershell_es'
     end,
   },
-
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
@@ -849,18 +866,18 @@ require('lazy').setup({
     end,
   },
 
-  { -- Highlight, edit, and navigate code
+  {
     'nvim-treesitter/nvim-treesitter',
+    build = ':TSUpdate',
     config = function()
-      local filetypes = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
-      require('nvim-treesitter').install(filetypes)
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = filetypes,
-        callback = function() vim.treesitter.start() end,
-      })
+      require('nvim-treesitter.config').setup {
+        ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'powershell' },
+        auto_install = true,
+        highlight = { enable = true },
+        indent = { enable = true },
+      }
     end,
   },
-
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
