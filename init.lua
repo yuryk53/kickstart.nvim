@@ -482,8 +482,8 @@ require('lazy').setup({
       -- Automatically install LSPs and related tools to stdpath for Neovim
       -- Mason must be loaded before its dependents so we need to set it up here.
       -- NOTE: `opts = {}` is the same as calling `require('mason').setup({})`
-      { 'mason-org/mason.nvim', opts = {} },
-      'mason-org/mason-lspconfig.nvim',
+      { 'williamboman/mason.nvim', opts = {} },
+      'williamboman/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
       -- Useful status updates for LSP.
@@ -491,6 +491,7 @@ require('lazy').setup({
 
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
+      'williamboman/mason-lspconfig.nvim',
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -733,9 +734,43 @@ require('lazy').setup({
           end,
         },
       }
+
+      -- PowerShell LSP (PowerShellEditorServices installed via Mason)
+      local data = vim.fn.stdpath 'data'
+      local cache = vim.fn.stdpath 'cache'
+
+      local mason_path = data .. '\\mason\\packages\\powershell-editor-services'
+      local start_script = mason_path .. '\\PowerShellEditorServices\\Start-EditorServices.ps1'
+      local session_path = cache .. '\\powershell_es.session.json'
+
+      vim.lsp.config.powershell_es = {
+        capabilities = require('blink.cmp').get_lsp_capabilities(), -- you already use this pattern
+        -- IMPORTANT: match your actual buffer filetypes on Windows
+        filetypes = { 'ps1', 'psm1', 'psd1', 'powershell' },
+        root_markers = { '.git' },
+
+        -- IMPORTANT: use -File + -Stdio (much more reliable on Windows than -Command strings)
+        cmd = {
+          'pwsh',
+          '-NoLogo',
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          start_script,
+          '-Stdio',
+          '-BundledModulesPath',
+          mason_path,
+          '-SessionDetailsPath',
+          session_path,
+          '-LogLevel',
+          'Normal',
+        },
+      }
+
+      vim.lsp.enable 'powershell_es'
     end,
   },
-
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
@@ -938,32 +973,19 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
-  { -- Highlight, edit, and navigate code
+
+  {
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
-    main = 'nvim-treesitter.config', -- Sets main module to use for opts
-    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+    config = function()
+      require('nvim-treesitter.config').setup {
+        ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'powershell' },
+        auto_install = true,
+        highlight = { enable = true },
+        indent = { enable = true },
+      }
+    end,
   },
-
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
