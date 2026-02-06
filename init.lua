@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -163,6 +163,14 @@ vim.o.scrolloff = 10
 -- instead raise a dialog asking if you wish to save the current file(s)
 -- See `:help 'confirm'`
 vim.o.confirm = true
+
+-- next 3 lines are for nvim-tree plugin
+-- disable netrw at the very start of your init.lua
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+-- optionally enable 24-bit colour
+vim.opt.termguicolors = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -387,6 +395,12 @@ require('lazy').setup({
         --   },
         -- },
         -- pickers = {}
+        pickers = {
+          find_files = {
+            no_ignore = true,
+            hidden = true,
+          },
+        },
         extensions = {
           ['ui-select'] = { require('telescope.themes').get_dropdown() },
         },
@@ -488,7 +502,7 @@ require('lazy').setup({
 
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
-      'williamboman/mason-lspconfig.nvim',
+      'mason-org/mason-lspconfig.nvim',
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -622,20 +636,20 @@ require('lazy').setup({
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-      require('mason-lspconfig').setup {
-        ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = false,
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
-      }
+      -- require('mason-lspconfig').setup {
+      --   ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
+      --   automatic_installation = false,
+      --   handlers = {
+      --     function(server_name)
+      --       local server = servers[server_name] or {}
+      --       -- This handles overriding only values explicitly passed
+      --       -- by the server configuration above. Useful when disabling
+      --       -- certain features of an LSP (for example, turning off formatting for ts_ls)
+      --       server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+      --       require('lspconfig')[server_name].setup(server)
+      --     end,
+      --   },
+      -- }
 
       -- PowerShell LSP (PowerShellEditorServices installed via Mason)
       local data = vim.fn.stdpath 'data'
@@ -875,6 +889,46 @@ require('lazy').setup({
         auto_install = true,
         highlight = { enable = true },
         indent = { enable = true },
+      }
+    end,
+  },
+  {
+    'nvim-tree/nvim-tree.lua',
+    config = function()
+      -- empty setup using defaults
+      require('nvim-tree').setup {
+        git = {
+          enable = true,
+          ignore = false,
+          timeout = 500,
+        },
+        filesystem_watchers = {
+          enable = true,
+          ignore_dirs = {
+            'build',
+            'Build',
+            'Debug',
+            '.git',
+            'node_modules',
+            'bin',
+            'Bin',
+            'Source/packages',
+          },
+        },
+      }
+    end,
+  },
+  --remember last opened session
+  {
+    'rmagatti/auto-session',
+    config = function()
+      require('auto-session').setup {
+        log_level = 'error',
+        ---enables autocomplete for opts
+        ---@module "auto-session"
+        ---@type AutoSession.Config
+        suppressed_dirs = { '~/', '~/Projects', '~/Downloads', '/' },
+        -- log_level = 'debug',
       }
     end,
   },
