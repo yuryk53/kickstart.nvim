@@ -20,6 +20,12 @@
 =====================================================================
 =====================================================================
 
+To make current setup work with Windows:
+1. Install rigprep (used by Telescope): winget install -e --id BurntSushi.ripgrep.MSVC
+2. nvim-tree: install nerd font: CaskaydiaMonoNerdFont-Regular.ttf
+   2.1. Configure the font as a default font for deault terminal application (where nvim is opened)
+
+
 What is Kickstart?
 
   Kickstart.nvim is *not* a distribution.
