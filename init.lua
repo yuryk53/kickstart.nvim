@@ -24,6 +24,9 @@ To make current setup work with Windows:
 1. Install rigprep (used by Telescope): winget install -e --id BurntSushi.ripgrep.MSVC
 2. nvim-tree: install nerd font: CaskaydiaMonoNerdFont-Regular.ttf
    2.1. Configure the font as a default font for deault terminal application (where nvim is opened)
+3. CSharp syntax/LSP:
+  3.1. :TSInstall c_sharp (used by 'nvim-treesitter.config')
+  3.2. :MasonInstall roslyn
 
 
 What is Kickstart?
@@ -642,6 +645,14 @@ require('lazy').setup({
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
+      -- needed for seblyng/roslyn.nvim (C# Roslyn LSP setup)
+      require('mason').setup {
+        registries = {
+          'github:mason-org/mason-registry',
+          'github:Crashdummyy/mason-registry',
+        },
+      }
+
       -- require('mason-lspconfig').setup {
       --   ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
       --   automatic_installation = false,
@@ -891,7 +902,7 @@ require('lazy').setup({
     build = ':TSUpdate',
     config = function()
       require('nvim-treesitter.config').setup {
-        ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'powershell' },
+        ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'powershell', 'c_sharp' },
         auto_install = true,
         highlight = { enable = true },
         indent = { enable = true },
@@ -937,6 +948,16 @@ require('lazy').setup({
         -- log_level = 'debug',
       }
     end,
+  },
+  -- Support for C# LSP
+  {
+    'seblyng/roslyn.nvim',
+    ---@module 'roslyn.config'
+    ---@type RoslynNvimConfig
+    opts = {
+      -- your configuration comes here; leave empty for default settings
+    },
+    config = function() require('roslyn').setup() end,
   },
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
