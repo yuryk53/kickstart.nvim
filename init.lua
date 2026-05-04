@@ -926,7 +926,7 @@ require('lazy').setup({
         git = {
           enable = true,
           ignore = false,
-          timeout = 500,
+          timeout = 1000,
         },
         sort_by = 'modification_time',
         update_focused_file = {
