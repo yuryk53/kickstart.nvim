@@ -181,6 +181,12 @@ vim.g.loaded_netrwPlugin = 1
 -- optionally enable 24-bit colour
 vim.opt.termguicolors = true
 
+-- set default shell for external commands to be Powershell
+vim.opt.shell = 'pwsh'
+vim.opt.shellcmdflag = '-Command'
+vim.opt.shellquote = ''
+vim.opt.shellxquote = ''
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -921,6 +927,10 @@ require('lazy').setup({
           enable = true,
           ignore = false,
           timeout = 500,
+        },
+        sort_by = 'modification_time',
+        update_focused_file = {
+          enable = true,
         },
         filesystem_watchers = {
           enable = true,
